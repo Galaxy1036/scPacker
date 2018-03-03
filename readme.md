@@ -41,7 +41,7 @@ Let's take an example from an original \_tex.sc files. For this example we'll us
 First we'll extract the .png textures using [Dumpsc](https://github.com/Galaxy1036/Dumpsc).  
 Here is the console logs after extracting textures:  
 
-![Image](/dumpsc_example.png)
+![Image](/dumpsc_example.PNG)
 
 According to the logs it seems that loading\_tex.png use pixelformat 0, loading\_tex\_.png use pixelformat 4 and loading\_tex\_\_.png use pixelformat 6.
 
