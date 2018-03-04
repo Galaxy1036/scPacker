@@ -86,7 +86,7 @@ class Packer(BinaryWriter):
             outputName = self.settings['outputname']
 
         else:
-            outputName = '_'.join(list(filter(None, (''.join(''.join(filename.split('.png')).split('_')).split('tex'))))) + '_tex.sc'
+            outputName = '_'.join(list(filter(None, (''.join(''.join(self.image_list[0]['Path'].split('.png')).split('_')).split('tex'))))) + '_tex.sc'
 
         with open(outputName, 'wb') as f:
             f.write(self.buffer)
