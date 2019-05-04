@@ -35,7 +35,7 @@ in this case ui\_tex.png will be packed using pixelformat 0 and ui\_tex\_.png us
 * `-s`: enable 32x32 block texture splitting, 32x32 block splitting is used in most of the original Supercell _tex.sc files
 
 Command Example:
-> python Main.py loading\_tex.png loading\_tex\_.png loading\_tex\_\_.png -p 0 4 6 -c -header -s -o afilename\_tex.sc
+> python Main.py loading\_tex.png loading\_tex\_.png loading\_tex\_\_.png -p 0 4 6 -lzma -header -s -o afilename\_tex.sc
 
 ### How do i know which pixeltype to use if i want to pack an original texture ?
 Let's take an example from an original \_tex.sc files. For this example we'll use loading\_tex.sc from Clash Royale.  
