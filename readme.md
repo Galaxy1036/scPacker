@@ -30,6 +30,7 @@ in this case ui\_tex.png will be packed using pixelformat 0 and ui\_tex\_.png us
 
 * `-lzma`: if this argument is specified tex.sc file will be compressed using lzma
 * `-lzham`: if this argument is specified tex.sc file will be compressed using lzham
+* `-zstd`: if this argument is specified tex.sc file will be compressed using zstandard
 * `-header`: add Supercell header at the beginning of the compressed tex.sc file
 * `-o`: optionnal output filename for the tex.sc file, if this argument isn't specified tex.sc file will be saved as <first\_packed\_filename\> + _tex.sc 
 * `-s`: enable 32x32 block texture splitting, 32x32 block splitting is used in most of the original Supercell _tex.sc files
@@ -51,5 +52,5 @@ Basically to re-pack these .png we'll use the following command:
 
 ### Dependencies
 To install **scPacker** dependencies run the following command 
- 
+
 > python -m pip install -r requirements.txt

@@ -1,11 +1,10 @@
-# -*- coding: utf-8 -*-
-
 import os
 import sys
 import lzma
 import lzham
 import hashlib
 import argparse
+import zstandard
 
 from PIL import Image
 from Writer import BinaryWriter
@@ -13,10 +12,11 @@ from Writer import BinaryWriter
 
 class Packer(BinaryWriter):
 
-    def __init__(self, use_lzma, use_lzham, splitting, header, outputName):
+    def __init__(self, use_lzma, use_lzham, use_zstd, splitting, header, outputName):
         self.settings = {
                          'use_lzma': use_lzma,
                          'use_lzham': use_lzham,
+                         'use_zstd': use_zstd,
                          'splitting': splitting,
                          'header': header,
                          'outputname': outputName
@@ -81,14 +81,14 @@ class Packer(BinaryWriter):
 
         self.write(5)
 
-        if self.settings['use_lzma'] or self.settings['use_lzham']:
+        if True in (self.settings['use_lzma'], self.settings['use_lzham'], self.settings['use_zstd']):
             self.compress_data()
 
         if self.settings['outputname']:
             outputName = self.settings['outputname']
 
         else:
-            outputName = '_'.join(list(filter(None, (''.join(''.join(self.image_list[0]['Path'].split('.png')).split('_')).split('tex'))))) + '_tex.sc'
+            outputName = os.path.splitext(self.image_list[0]['Path'])[0].rstrip('_') + '.sc'
 
         with open(outputName, 'wb') as f:
             f.write(self.buffer)
@@ -124,12 +124,9 @@ class Packer(BinaryWriter):
         print('[*] Splitting done !')
 
     def write_pixel(self, pixelFormat, colors):
-        red   = colors[0]
-        green = colors[1]
-        blue  = colors[2]
-        alpha = colors[3]
+        red, green, blue, alpha = colors
 
-        if pixelFormat == 0 or pixelFormat == 1:
+        if pixelFormat in (0, 1):
             # RGBA8888
             self.write_uint8(red)
             self.write_uint8(green)
@@ -189,13 +186,17 @@ class Packer(BinaryWriter):
             compressed = lzma.compress(self.buffer, format=lzma.FORMAT_ALONE, filters=filters)
             compressed = compressed[0:5] + len(self.buffer).to_bytes(4, 'little') + compressed[13:]
 
-        else:
+        elif self.settings['use_lzham']:
             print('[*] Compressing texture with lzham')
 
             dict_size = 18
 
             compressed = lzham.compress(self.buffer, {'dict_size_log2': dict_size})
             compressed = 'SCLZ'.encode('utf-8') + dict_size.to_bytes(1, 'big') + len(self.buffer).to_bytes(4, 'little') + compressed
+
+        else:
+            print('[*] Compressing texture with zstandard')
+            compressed = zstandard.compress(self.buffer, level=zstandard.MAX_COMPRESSION_LEVEL)
 
         fileMD5 = hashlib.md5(self.buffer).digest()
 
@@ -204,7 +205,13 @@ class Packer(BinaryWriter):
 
         if self.settings['header']:
             self.write('SC'.encode('utf-8'))
-            self.write_uint32(1, 'big')
+
+            if self.settings['use_zstd']:
+                self.write_uint32(3, 'big')
+
+            else:
+                self.write_uint32(1, 'big')
+
             self.write_uint32(len(fileMD5), 'big')
             self.write(fileMD5)
 
@@ -220,6 +227,7 @@ if __name__ == "__main__":
     parser.add_argument('files', help='.png file(s) to pack', nargs='+')
     parser.add_argument('-lzma', '--lzma', help='enable LZMA compression', action='store_true')
     parser.add_argument('-lzham', '--lzham', help='enable LZHAM compression', action='store_true')
+    parser.add_argument('-zstd', '--zstd', help='enable Zstandard compression', action='store_true')
     parser.add_argument('-header', '--header', help='add SC header to the beginning of the compressed _tex.sc', action='store_true')
     parser.add_argument('-o', '--outputname', help='define an output name for the _tex.sc file (if not specified the output filename is set to <first_packed_filename> + _tex.sc')
     parser.add_argument('-p', '--pixelformat', help='pixelformat(s) to be used to pack .png to _tex.sc', nargs='+', type=int)
@@ -229,8 +237,8 @@ if __name__ == "__main__":
 
     if args.pixelformat:
         if len(args.files) == len(args.pixelformat):
-            if not (args.lzma and args.lzham):
-                scPacker = Packer(args.lzma, args.lzham, args.splitting, args.header, args.outputname)
+            if (args.lzham, args.lzma, args.zstd).count(True) == 1:
+                scPacker = Packer(args.lzma, args.lzham, args.zstd, args.splitting, args.header, args.outputname)
 
                 for file, pixelFormat in zip(args.files, args.pixelformat):
                     if file.endswith('.png'):
@@ -248,7 +256,7 @@ if __name__ == "__main__":
                 scPacker.pack()
 
             else:
-                print('[*] You cannot set both lzma and lzham compression !')
+                print('[*] You cannot set many compression at a time !')
 
         else:
             print('[*] Files count and pixelformats count don\'t match !')
